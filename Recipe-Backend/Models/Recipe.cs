@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,7 +10,8 @@ namespace RecipeBackend.Models
     public class Recipe
     {
         public string Name { get; set; }
-        public int Id { get; set; }
+        [BsonId]
+        public string Id { get; set; }
         public int Servings { get; set; }
         public int PrepTime { get; set; } //In Minutes
         public int CookTime { get; set; } //In Minutes
@@ -18,5 +21,6 @@ namespace RecipeBackend.Models
         public bool IsVegitarian { get; set; }
         public bool IsGlutenFree { get; set; }
         public bool IsKosher { get; set; }
+        public IEnumerable<string> Images { get; set; }
     }
 }
