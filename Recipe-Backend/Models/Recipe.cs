@@ -18,7 +18,7 @@ namespace RecipeBackend.Models
         public IEnumerable<Ingredient> Ingredients { get; set; }
         public IEnumerable<string> Directions { get; set; }
         public bool IsVegan { get; set; }
-        public bool IsVegitarian { get; set; }
+        public bool IsVegetarian { get; set; }
         public bool IsGlutenFree { get; set; }
         public bool IsKosher { get; set; }
         public IEnumerable<string> Images { get; set; }
