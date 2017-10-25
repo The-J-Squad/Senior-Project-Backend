@@ -26,7 +26,7 @@ namespace RecipeBackend
 
             ILogger<Program> logger = (ILogger<Program>)host.Services.GetService(typeof(ILogger<Program>));
             Settings settings = ((IOptions<Settings>)host.Services.GetService(typeof(IOptions<Settings>)))?.Value;
-
+            var client = new MongoClient(settings.ConnectionString);
             var mongoPath = Environment.GetEnvironmentVariable("MONGO") ?? "";
             // Use ProcessStartInfo class
             ProcessStartInfo mongod = new ProcessStartInfo
@@ -43,6 +43,7 @@ namespace RecipeBackend
                 // Call WaitForExit and then the using statement will close.
                 using (Process exeProcess = Process.Start(mongod))
                 {
+                    client.GetDatabase(settings.Database).GetCollection<Recipe>(settings.Collection);
                     RestoreBackup(mongoPath, logger, settings);
                     logger.LogDebug("mongod.exe started");
                     host.Run();
@@ -53,7 +54,7 @@ namespace RecipeBackend
                     {
                         logger.LogDebug("mongod.exe started again for restore");
                         SaveBackup(mongoPath, logger, settings);
-                        var client = new MongoClient(settings.ConnectionString);
+                        
                         if (client != null)
                         {
                             var adminDatabase = client.GetDatabase("admin");
