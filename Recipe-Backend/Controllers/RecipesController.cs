@@ -4,10 +4,11 @@ using RecipeBackend.Models;
 using RecipeBackend.Repositories;
 using System.Threading.Tasks;
 using MongoDB.Driver;
+using System;
 
 namespace RecipeBackend.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/recipes")]
     public class RecipesController : Controller
     {
         private readonly IRecipeRepository _recipeRepository;
@@ -17,7 +18,7 @@ namespace RecipeBackend.Controllers
             new Recipe()
             {
                 Name= "Recipe 0",
-                Id = "0",
+                Id = new Guid(),
                 PrepTime = 30,
                 CookTime = 60,
                 Directions = new string[]{
@@ -50,7 +51,7 @@ namespace RecipeBackend.Controllers
             new Recipe()
             {
                 Name="Recipe 1",
-                Id = "1",
+                Id = new Guid(),
                 PrepTime = 15,
                 CookTime = 90,
                 Directions = new string[]{
@@ -117,9 +118,10 @@ namespace RecipeBackend.Controllers
         }
 
         [HttpPost]
-        public Task Post([FromBody]Recipe recipe)
+        public Recipe Post([FromBody]Recipe recipe)
         {
-            return _recipeRepository.AddRecipe(recipe);
+            _recipeRepository.AddRecipe(recipe);
+            return recipe;
         }
 
         [HttpPut("{id}")]

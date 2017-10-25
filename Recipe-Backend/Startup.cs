@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RecipeBackend.Models;
 using RecipeBackend.Repositories;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace RecipeBackend
 {
@@ -30,15 +31,13 @@ namespace RecipeBackend
         public void ConfigureServices(IServiceCollection services)
         {
             // Add framework services.
-            services.AddMvc();
-
-            services.Configure<Settings>(options =>
+            services.AddTransient<IRecipeRepository, RecipeRepository>()
+                .Configure<Settings>(options =>
             {
                 options.ConnectionString = Configuration.GetSection("MongoConnection:ConnectionString").Value;
                 options.Database = Configuration.GetSection("MongoConnection:Database").Value;
-            });
-
-            services.AddTransient<IRecipeRepository, RecipeRepository>();
+            })
+            .AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

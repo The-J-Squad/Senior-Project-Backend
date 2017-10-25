@@ -11,7 +11,7 @@ namespace RecipeBackend.Models
     {
         public string Name { get; set; }
         [BsonId]
-        public string Id { get; set; }
+        public Guid Id { get; set; } = new Guid();
         public int Servings { get; set; }
         public int PrepTime { get; set; } //In Minutes
         public int CookTime { get; set; } //In Minutes
