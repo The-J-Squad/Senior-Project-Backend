@@ -5,6 +5,10 @@ using System.Diagnostics;
 using System;
 using System.Threading;
 using Microsoft.Extensions.Logging;
+using RecipeBackend.Models;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using MongoDB.Bson;
 
 namespace RecipeBackend
 {
@@ -21,7 +25,9 @@ namespace RecipeBackend
                         .Build();
 
             ILogger<Program> logger = (ILogger<Program>)host.Services.GetService(typeof(ILogger<Program>));
-            var mongoPath = Environment.GetEnvironmentVariable("MONGOD");
+            Settings settings = ((IOptions<Settings>)host.Services.GetService(typeof(IOptions<Settings>)))?.Value;
+
+            var mongoPath = Environment.GetEnvironmentVariable("MONGO") ?? "";
             // Use ProcessStartInfo class
             ProcessStartInfo mongod = new ProcessStartInfo
             {
@@ -37,15 +43,37 @@ namespace RecipeBackend
                 // Call WaitForExit and then the using statement will close.
                 using (Process exeProcess = Process.Start(mongod))
                 {
-                    RestoreBackup(mongoPath);
+                    RestoreBackup(mongoPath, logger, settings);
                     logger.LogDebug("mongod.exe started");
                     host.Run();
                     logger.LogDebug("webAPI started");
                     exeProcess.WaitForExit();
-
+                    logger.LogDebug("Program finished. webAPI and mongod.exe finished");
                     using (Process exeProcess2 = Process.Start(mongod))
                     {
-                        SaveBackup(mongoPath);
+                        logger.LogDebug("mongod.exe started again for restore");
+                        SaveBackup(mongoPath, logger, settings);
+                        var client = new MongoClient(settings.ConnectionString);
+                        if (client != null)
+                        {
+                            var adminDatabase = client.GetDatabase("admin");
+                            var cmd = new BsonDocument("shutdown", 1);
+                            try
+                            {
+                                adminDatabase.RunCommand<BsonDocument>(cmd); //This throws an exception. No way around it.
+                            }
+                            catch (Exception e)
+                            {
+                                if (!(e.InnerException is IOException) && e.InnerException.Message == ("Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host."))
+                                {
+                                    throw; //rethrow if we weren't expecting it.
+                                }
+                                else
+                                {
+                                    logger.LogDebug("mongod.exe finished from restore");
+                                }
+                            }
+                        }
                         exeProcess2.Kill();
                     }
                     logger.LogDebug("mongod.exe finished");
@@ -53,12 +81,12 @@ namespace RecipeBackend
             }
             catch (Exception e)
             {
-                logger.LogError(e, "mongod.exe error");
-                Console.Out.WriteLine("Caught this" + e);
+                    logger.LogError(e, "mongod.exe error");
+                    Console.Out.WriteLine("Caught this" + e);
             }
         }
 
-        private static void SaveBackup(string mongoPath)
+        private static void SaveBackup(string mongoPath, ILogger<Program> logger, Settings settings)
         {
             ProcessStartInfo mongodump = new ProcessStartInfo
             {
@@ -66,7 +94,7 @@ namespace RecipeBackend
                 UseShellExecute = false,
                 FileName = $@"{mongoPath}mongoexport.exe",
                 WindowStyle = ProcessWindowStyle.Maximized,
-                Arguments = @"--db RecipesDb --collection Recipe --out ../recipesBackup.json"
+                Arguments = $@"--db {settings.Database} --collection {settings.Collection} --out ../recipesBackup.json"
             };
 
             try
@@ -75,16 +103,19 @@ namespace RecipeBackend
                 // Call WaitForExit and then the using statement will close.
                 using (Process exeProcess = Process.Start(mongodump))
                 {
+                    logger.LogDebug("mongoexport.exe started");
                     exeProcess.WaitForExit();
+                    logger.LogDebug("mongoexport.exe finished");
                 }
             }
             catch (Exception e)
             {
+                logger.LogError(e, "mongoexport.exe error");
                 Console.Out.WriteLine("Failed Backup:" + e);
             }
         }
 
-        private static void RestoreBackup(string mongoPath)
+        private static void RestoreBackup(string mongoPath, ILogger<Program> logger, Settings settings)
         {
             ProcessStartInfo mongodump = new ProcessStartInfo
             {
@@ -92,7 +123,7 @@ namespace RecipeBackend
                 UseShellExecute = false,
                 FileName = $@"{mongoPath}mongoimport.exe",
                 WindowStyle = ProcessWindowStyle.Maximized,
-                Arguments = @"--db RecipesDb --collection Recipe --type json --mode upsert --file ../recipesBackup.json"
+                Arguments = $@"--db {settings.Database} --collection {settings.Collection} --type json --mode upsert --file ../recipesBackup.json"
             };
 
             try
@@ -101,11 +132,14 @@ namespace RecipeBackend
                 // Call WaitForExit and then the using statement will close.
                 using (Process exeProcess = Process.Start(mongodump))
                 {
+                    logger.LogDebug("mongoimport.exe started");
                     exeProcess.WaitForExit();
+                    logger.LogDebug("mongoimport.exe started");
                 }
             }
             catch (Exception e)
             {
+                logger.LogError(e, "mongoimport.exe error");
                 Console.Out.WriteLine("Failed Restore:" + e);
             }
         }
