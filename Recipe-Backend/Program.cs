@@ -45,14 +45,14 @@ namespace RecipeBackend
                 {
                     client.GetDatabase(settings.Database).GetCollection<Recipe>(settings.Collection);
                     RestoreBackup(mongoPath, logger, settings);
-                    logger.LogDebug("mongod.exe started");
+                    logger.LogInformation("mongod.exe started");
                     host.Run();
-                    logger.LogDebug("webAPI started");
+                    logger.LogInformation("webAPI started");
                     exeProcess.WaitForExit();
-                    logger.LogDebug("Program finished. webAPI and mongod.exe finished");
+                    logger.LogInformation("Program finished. webAPI and mongod.exe finished");
                     using (Process exeProcess2 = Process.Start(mongod))
                     {
-                        logger.LogDebug("mongod.exe started again for restore");
+                        logger.LogInformation("mongod.exe started again for restore");
                         SaveBackup(mongoPath, logger, settings);
                         
                         if (client != null)
@@ -71,13 +71,13 @@ namespace RecipeBackend
                                 }
                                 else
                                 {
-                                    logger.LogDebug("mongod.exe finished from restore");
+                                    logger.LogInformation("mongod.exe finished from restore");
                                 }
                             }
                         }
                         exeProcess2.Kill();
                     }
-                    logger.LogDebug("mongod.exe finished");
+                    logger.LogInformation("mongod.exe finished");
                 }
             }
             catch (Exception e)
@@ -104,9 +104,9 @@ namespace RecipeBackend
                 // Call WaitForExit and then the using statement will close.
                 using (Process exeProcess = Process.Start(mongodump))
                 {
-                    logger.LogDebug("mongoexport.exe started");
+                    logger.LogInformation("mongoexport.exe started");
                     exeProcess.WaitForExit();
-                    logger.LogDebug("mongoexport.exe finished");
+                    logger.LogInformation("mongoexport.exe finished");
                 }
             }
             catch (Exception e)
@@ -133,9 +133,9 @@ namespace RecipeBackend
                 // Call WaitForExit and then the using statement will close.
                 using (Process exeProcess = Process.Start(mongodump))
                 {
-                    logger.LogDebug("mongoimport.exe started");
+                    logger.LogInformation("mongoimport.exe started");
                     exeProcess.WaitForExit();
-                    logger.LogDebug("mongoimport.exe started");
+                    logger.LogInformation("mongoimport.exe started");
                 }
             }
             catch (Exception e)

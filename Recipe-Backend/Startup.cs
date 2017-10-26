@@ -36,6 +36,7 @@ namespace RecipeBackend
             {
                 options.ConnectionString = Configuration.GetSection("MongoConnection:ConnectionString").Value;
                 options.Database = Configuration.GetSection("MongoConnection:Database").Value;
+                options.Collection = Configuration.GetSection("MongoConnection:Collection").Value;
             })
             .AddMvc();
         }

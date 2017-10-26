@@ -2,8 +2,8 @@
 {
     public class Settings
     {
-        public string ConnectionString { get; set; } = "mongodb://127.0.0.1:27017";
-        public string Database { get; set; } = "RecipesDb";
-        public string Collection { get; set; } = "Recipe";
+        public string ConnectionString { get; set; }
+        public string Database { get; set; }
+        public string Collection { get; set; }
     }
 }
