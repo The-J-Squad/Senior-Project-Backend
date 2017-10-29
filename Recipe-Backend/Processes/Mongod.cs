@@ -8,7 +8,7 @@ namespace RecipeBackend.Processes
 {
     public class Mongod : IDisposable
     {
-        private Process process;
+        public Process process;
         private readonly Settings _settings;
         private readonly ILogger<Mongod> _logger;
 
@@ -21,14 +21,16 @@ namespace RecipeBackend.Processes
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    CreateNoWindow = false,
+                    CreateNoWindow = true,
                     UseShellExecute = false,
                     FileName = $@"{_settings.MongoPath}mongod.exe",
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                    RedirectStandardError = true,
+                    
                 }
             };
 
+            process.EnableRaisingEvents = true;
             process.ErrorDataReceived += Process_ErrorDataReceived;
             process.OutputDataReceived += Process_OutputDataReceived;
             process.Start();
@@ -38,33 +40,38 @@ namespace RecipeBackend.Processes
 
         public void WaitForExit() => process?.WaitForExit();
 
-        public void Kill()
-        {
-            process?.CancelErrorRead();
-            process?.CancelOutputRead();
-            process?.Kill();
-        }
-
         private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!String.IsNullOrWhiteSpace(e?.Data?.ToString()))
+            try
             {
-                _logger.LogDebug($"{sender}:\n\t{e.Data}");
+                if (!String.IsNullOrWhiteSpace(e?.Data?.ToString()))
+                {
+                    _logger.LogDebug($"{sender}:\n\t{e.Data}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to log. Asynchronous process finished before asynchrous logs. Usually caused by debugging.", ex);
             }
         }
 
         private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!String.IsNullOrWhiteSpace(e?.Data?.ToString()))
+            try
             {
-                _logger.LogWarning($"{sender}:\n\t{e.Data}");
+                if (!String.IsNullOrWhiteSpace(e?.Data?.ToString()))
+                {
+                    _logger.LogWarning($"{sender}:\n\t{e.Data}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Failed to log. Asynchronous process finished before asynchrous logs. Usually caused by debugging.", ex);
             }
         }
 
         public void Dispose()
         {
-            process?.CancelErrorRead();
-            process?.CancelOutputRead();
             process?.Dispose();
             process = null;
         }
