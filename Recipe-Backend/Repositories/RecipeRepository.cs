@@ -32,6 +32,18 @@ namespace RecipeBackend.Repositories
             }
         }
 
+        public async Task<IEnumerable<Recipe>> GetSpecificRecipes(string searchterms)
+        {
+            try
+            {
+                return await _context.Recipes.Find(Builders<Recipe>.Filter.Text(searchterms)).ToListAsync();
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
+        }
+
         public async Task<Recipe> GetRecipe(string id)
         {
             var filter = Builders<Recipe>.Filter.Eq("Id", id);
@@ -106,3 +118,4 @@ namespace RecipeBackend.Repositories
         }
     }
 }
+    

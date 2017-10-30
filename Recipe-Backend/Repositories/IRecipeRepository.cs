@@ -10,6 +10,7 @@ namespace RecipeBackend.Repositories
     public interface IRecipeRepository
     {
         Task<IEnumerable<Recipe>> GetAllRecipes();
+        Task<IEnumerable<Recipe>> GetSpecificRecipes(string searchterms);
         Task<Recipe> GetRecipe(string id);
         Task AddRecipe(Recipe item);
         Task<DeleteResult> RemoveRecipe(string id);

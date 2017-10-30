@@ -24,6 +24,12 @@ namespace RecipeBackend.Controllers
             return _recipeRepository.GetAllRecipes();
         }
 
+        [HttpGet("search/{searchterms}")]
+        public Task<IEnumerable<Recipe>> GetSpecificRecipes(String searchterms)
+        {
+            return _recipeRepository.GetSpecificRecipes(searchterms);
+        }
+
         [HttpGet("{id}")]
         public Task<Recipe> Get(string id)
         {
