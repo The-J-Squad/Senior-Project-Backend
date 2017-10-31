@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Recipe_Backend": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "launchUrl": "api/",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:9253"
+    }
+  }
+}
