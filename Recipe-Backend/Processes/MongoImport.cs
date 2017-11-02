@@ -1,19 +1,25 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using RecipeBackend.Models;
 using System;
 using System.Diagnostics;
+using System.Threading;
 
 namespace RecipeBackend.Processes
 {
     public class MongoImport : IDisposable
     {
         private Process process;
+
+        private Mongod _mongod;
         private readonly Settings _settings;
         private readonly ILogger<MongoImport> _logger;
 
-        public MongoImport(IOptions<Settings> settings, ILogger<MongoImport> logger)
+        public MongoImport(Mongod mongod, IOptions<Settings> settings, ILogger<MongoImport> logger)
         {
+            _mongod = mongod;
             _settings = settings.Value;
             _logger = logger;
 
@@ -37,7 +43,24 @@ namespace RecipeBackend.Processes
             process.BeginOutputReadLine();
         }
 
-        public void WaitForExit() => process?.WaitForExit();
+        public void WaitForExit()
+        {
+            process?.WaitForExit();
+
+            var client = new MongoClient(_settings.ConnectionString);
+            var adminDatabase = client.GetDatabase("admin");
+            var cmd = new BsonDocument("shutdown", 1);
+
+            try {
+                adminDatabase.RunCommand<BsonDocument>(cmd); //This throws an exception. No way around it. We will ignore it.
+                Thread.Sleep(1000);
+                _logger.LogWarning("Expected exception not yet caught");
+            } catch {
+                _logger.LogDebug("Expected exception caught");
+            } 
+
+            _mongod?.WaitForExit();
+        }
 
         private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
@@ -71,6 +94,8 @@ namespace RecipeBackend.Processes
 
         public void Dispose()
         {
+            _mongod?.Dispose();
+            _mongod = null;
             process?.Dispose();
             process = null;
         }
