@@ -8,7 +8,7 @@ namespace RecipeBackend.Processes
 {
     public class Mongod : IDisposable
     {
-        public Process process;
+        private Process process;
         private readonly Settings _settings;
         private readonly ILogger<Mongod> _logger;
 

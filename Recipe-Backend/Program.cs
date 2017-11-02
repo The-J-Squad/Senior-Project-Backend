@@ -14,7 +14,6 @@ namespace RecipeBackend
                         .UseContentRoot(Directory.GetCurrentDirectory())
                         .UseIISIntegration()
                         .UseStartup<Startup>()
-                        .UseApplicationInsights()
                         .ConfigureLogging(logging => logging.SetMinimumLevel(LogLevel.Trace))
                         .Build();
 

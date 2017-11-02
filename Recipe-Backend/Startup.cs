@@ -8,6 +8,7 @@ using RecipeBackend.Models;
 using RecipeBackend.Repositories;
 using RecipeBackend.Processes;
 using Microsoft.Extensions.Options;
+using System.Threading;
 
 namespace RecipeBackend
 {
@@ -59,7 +60,9 @@ namespace RecipeBackend
                 .AddFile(pathFormat: $"../Logs/{DateTime.Now.ToFileTime()}.log", minimumLevel: LogLevel.Trace); ;
 
             app.UseMvc();
-            
+
+            _logger = serviceProvider.GetRequiredService(typeof(ILogger<Startup>)) as ILogger<Startup>;
+
             applicationLifetime.ApplicationStarted.Register(() => OnStart(serviceProvider));
             applicationLifetime.ApplicationStopping.Register(() => OnStopping(serviceProvider));
             applicationLifetime.ApplicationStopped.Register(() => OnStopped(serviceProvider));
@@ -67,24 +70,40 @@ namespace RecipeBackend
         
         private void OnStart(IServiceProvider serviceProvider)
         {
-            _mongod = serviceProvider.GetRequiredService(typeof(Mongod)) as Mongod;
-            _mongoImport = serviceProvider.GetRequiredService(typeof(MongoImport)) as MongoImport;
+            _logger.LogInformation("Starting Mongo Import");
 
+            _mongoImport = serviceProvider.GetRequiredService(typeof(MongoImport)) as MongoImport;
+            Thread.Sleep(1000);
             _mongoImport.WaitForExit();
             _mongoImport.Dispose();
+
+            _logger.LogInformation("Mongo Import Finished");
+
+            _logger.LogInformation("Starting Mongo DB");
+
+            _mongod = serviceProvider.GetRequiredService(typeof(Mongod)) as Mongod;
         }
 
         private void OnStopping(IServiceProvider serviceProvider)
-        {   
+        {
+            _logger.LogInformation("Starting Mongo Export");
+
             _mongoExport = serviceProvider.GetRequiredService(typeof(MongoExport)) as MongoExport;
+            Thread.Sleep(1000);
             _mongoExport.WaitForExit();
             _mongoExport.Dispose();
+
+            _logger.LogInformation("Mongo Export Finished");
         }
 
         private void OnStopped(IServiceProvider serviceProvider)
         {
+            Thread.Sleep(1000);
             _mongod.WaitForExit();
             _mongod.Dispose();
+
+            _logger.LogInformation("MongoDB Stopped");
+            _logger.LogInformation("Closing Application");
         }
     }
 }

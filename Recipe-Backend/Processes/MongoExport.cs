@@ -5,6 +5,7 @@ using MongoDB.Driver;
 using RecipeBackend.Models;
 using System;
 using System.Diagnostics;
+using System.Threading;
 
 namespace RecipeBackend.Processes
 {
@@ -51,7 +52,16 @@ namespace RecipeBackend.Processes
             var adminDatabase = client.GetDatabase("admin");
             var cmd = new BsonDocument("shutdown", 1);
 
-            try { adminDatabase.RunCommand<BsonDocument>(cmd); } catch { } //This throws an exception. No way around it. We will ignore it.
+            try
+            {
+                adminDatabase.RunCommand<BsonDocument>(cmd); //This throws an exception. No way around it. We will ignore it.
+                Thread.Sleep(1000);
+                _logger.LogWarning("Expected exception not yet caught");
+            }
+            catch(Exception e)
+            {
+                _logger.LogDebug("Expected exception caught", e);
+            }
 
             _mongod?.WaitForExit();
         }
