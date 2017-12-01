@@ -6,5 +6,7 @@
         public string Database { get; set; }
         public string Collection { get; set; }
         public string MongoPath { get; set; } = "";
+        public string ApplicationName { get; set; }
+        public string JwtSecret { get; set; }
     }
 }
