@@ -5,9 +5,11 @@ using RecipeBackend.Repositories;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using System;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RecipeBackend.Controllers
 {
+    [Authorize(Policy = "Member")]
     [Route("api/recipes")]
     public class RecipesController : Controller
     {

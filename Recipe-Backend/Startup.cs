@@ -7,8 +7,11 @@ using Microsoft.Extensions.Logging;
 using RecipeBackend.Models;
 using RecipeBackend.Repositories;
 using RecipeBackend.Processes;
-using Microsoft.Extensions.Options;
 using System.Threading;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using RecipeBackend.JwtAuthentication;
+using System.Threading.Tasks;
 
 namespace RecipeBackend
 {
@@ -38,6 +41,7 @@ namespace RecipeBackend
             // Add framework services.
             services
                 .AddTransient<IRecipeRepository, RecipeRepository>()
+                .AddTransient<IAccountRepository, AccountRepository>()
                 .AddTransient<Mongod>()
                 .AddTransient<MongoImport>()
                 .AddTransient<MongoExport>()
@@ -46,9 +50,47 @@ namespace RecipeBackend
                         options.ConnectionString = Configuration.GetSection("MongoConnection:ConnectionString").Value;
                         options.Database = Configuration.GetSection("MongoConnection:Database").Value;
                         options.Collection = Configuration.GetSection("MongoConnection:Collection").Value;
+                        options.JwtSecret = Configuration.GetSection("Authentication:JwtSecret").Value;
+                        options.ApplicationName = Configuration.GetSection("Authentication:ApplicationName").Value;
                         options.MongoPath = Environment.GetEnvironmentVariable("MONGO") ?? "";
                     })
-                .AddMvc();
+                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                    .AddJwtBearer(options =>
+                    {
+                        options.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+
+                            ValidIssuer = Configuration.GetSection("Authentication:ApplicationName").Value,
+                            ValidAudience = Configuration.GetSection("Authentication:ApplicationName").Value,
+                            IssuerSigningKey = JwtSecurityKey.Create(Configuration.GetSection("Authentication:JwtSecret").Value)
+                        };
+
+                        options.Events = new JwtBearerEvents
+                        {
+                            OnAuthenticationFailed = context =>
+                            {
+                                _logger.LogInformation("OnAuthenticationFailed: " + context.Exception.Message);
+                                return Task.CompletedTask;
+                            },
+                            OnTokenValidated = context =>
+                            {
+                                _logger.LogInformation("OnTokenValidated: " + context.SecurityToken);
+                                return Task.CompletedTask;
+                            }
+                        };
+                    });
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("Member",
+                    policy => policy.RequireClaim("MembershipId"));
+            });
+
+            services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -59,6 +101,7 @@ namespace RecipeBackend
                 .AddDebug()
                 .AddFile(pathFormat: $"../Logs/{DateTime.Now.ToFileTime()}.log", minimumLevel: LogLevel.Trace); ;
 
+            app.UseAuthentication();
             app.UseMvc();
 
             _logger = serviceProvider.GetRequiredService(typeof(ILogger<Startup>)) as ILogger<Startup>;
@@ -67,7 +110,7 @@ namespace RecipeBackend
             applicationLifetime.ApplicationStopping.Register(() => OnStopping(serviceProvider));
             applicationLifetime.ApplicationStopped.Register(() => OnStopped(serviceProvider));
         }
-        
+
         private void OnStart(IServiceProvider serviceProvider)
         {
             _logger.LogInformation("Starting Mongo Import");
